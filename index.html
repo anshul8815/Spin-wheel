@@ -279,120 +279,132 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const wheel = document.getElementById('spinWheel');
-            const spinBtn = document.getElementById('spinBtn');
-            const prizeNameSpan = document.getElementById('prizeName');
+    document.addEventListener('DOMContentLoaded', () => {
+        const wheel = document.getElementById('spinWheel');
+        const spinBtn = document.getElementById('spinBtn');
+        const prizeNameSpan = document.getElementById('prizeName');
+        
+        const claimSection = document.getElementById('claim-section');
+        const nameInput = document.getElementById('name');
+        const mobileInput = document.getElementById('mobile');
+        const whatsappShareBtn = document.getElementById('whatsapp-share-btn');
+        
+        const submissionSuccess = document.getElementById('submission-success');
+
+        // Ad container ko bhi select kar lete hain
+        const adContainer = document.getElementById('ad-container');
+
+        const prizes = [
+            { name: 'iPhone 14', degrees: 15 }, { name: 'Amazon Voucher ₹50', degrees: 45 },
+            { name: 'Bluetooth Speaker', degrees: 75 }, { name: 'Free Coffee Coupon', degrees: 105 },
+            { name: 'Surprise Gift Box', degrees: 135 }, { name: 'Better Luck Next Time', degrees: 165 },
+            { name: 'Samsung TV', degrees: 195 }, { name: '20% Discount Voucher', degrees: 225 },
+            { name: 'AirPods', degrees: 255 }, { name: 'Smartwatch', degrees: 285 },
+            { name: 'Movie Ticket', degrees: 315 }, { name: '₹100 PayTM Cash', degrees: 345 }
+        ];
+
+        let isSpinning = false;
+        let currentRotation = 0;
+        let wonPrize = null;
+
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.textContent = 'SPINNING...';
+
+            const winningPrizes = prizes.filter(p => p.name !== 'Better Luck Next Time');
+            const randomPrizeIndex = Math.floor(Math.random() * winningPrizes.length);
+            wonPrize = winningPrizes[randomPrizeIndex];
             
-            const claimSection = document.getElementById('claim-section');
-            const nameInput = document.getElementById('name');
-            const mobileInput = document.getElementById('mobile');
-            const whatsappShareBtn = document.getElementById('whatsapp-share-btn');
+            const extraRotations = Math.floor(Math.random() * 3) + 5;
+            const targetRotation = (360 * extraRotations) + wonPrize.degrees;
+            const finalRotation = targetRotation - (currentRotation % 360);
             
-            const submissionSuccess = document.getElementById('submission-success');
+            currentRotation += finalRotation;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-            const prizes = [
-                { name: 'iPhone 14', degrees: 15 }, { name: 'Amazon Voucher ₹50', degrees: 45 },
-                { name: 'Bluetooth Speaker', degrees: 75 }, { name: 'Free Coffee Coupon', degrees: 105 },
-                { name: 'Surprise Gift Box', degrees: 135 }, { name: 'Better Luck Next Time', degrees: 165 },
-                { name: 'Samsung TV', degrees: 195 }, { name: '20% Discount Voucher', degrees: 225 },
-                { name: 'AirPods', degrees: 255 }, { name: 'Smartwatch', degrees: 285 },
-                { name: 'Movie Ticket', degrees: 315 }, { name: '₹100 PayTM Cash', degrees: 345 }
-            ];
-
-            let isSpinning = false;
-            let currentRotation = 0;
-            let wonPrize = null;
-
-            spinBtn.addEventListener('click', () => {
-                if (isSpinning) return;
-                isSpinning = true;
-                spinBtn.disabled = true;
-                spinBtn.textContent = 'SPINNING...';
-
-                const winningPrizes = prizes.filter(p => p.name !== 'Better Luck Next Time');
-                const randomPrizeIndex = Math.floor(Math.random() * winningPrizes.length);
-                wonPrize = winningPrizes[randomPrizeIndex];
+            wheel.addEventListener('transitionend', () => {
+                launchConfetti();
+                prizeNameSpan.textContent = wonPrize.name;
+                spinBtn.classList.add('hidden');
                 
-                const extraRotations = Math.floor(Math.random() * 3) + 5;
-                const targetRotation = (360 * extraRotations) + wonPrize.degrees;
-                const finalRotation = targetRotation - (currentRotation % 360);
-                
-                currentRotation += finalRotation;
-                wheel.style.transform = `rotate(${currentRotation}deg)`;
-
-                wheel.addEventListener('transitionend', () => {
-                    launchConfetti();
-                    prizeNameSpan.textContent = wonPrize.name;
-                    spinBtn.classList.add('hidden');
-                    claimSection.classList.remove('hidden');
-                }, { once: true });
-            });
-
-            // --- WhatsApp Share & Claim Logic ---
-            whatsappShareBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-
-                const name = nameInput.value.trim();
-                const mobile = mobileInput.value.trim();
-
-                if (name === '' || mobile === '') {
-                    alert('Please fill in your name and mobile number to claim your prize.');
-                    return;
+                // Spin ke baad ad ko bhi hide kar denge
+                if (adContainer) {
+                    adContainer.classList.add('hidden');
                 }
-                if (!/^[0-9]{10}$/.test(mobile)) {
-                    alert('Please enter a valid 10-digit mobile number.');
-                    return;
-                }
-
-                // ***** THIS IS THE CORRECTED PART *****
                 
-                // 1. Get the current page URL automatically
-                const pageUrl = window.location.href;
-                
-                // 2. Construct the message WITH the page URL
-                const prize = wonPrize.name;
-                // Using \n for a new line to make the message look clean
-                const dynamicMessage = `🎉 Wow! I'm ${name}, and I just won a ${prize}!\n\nYou should try your luck too! 👇\n${pageUrl}`;
-                
-                // 3. Encode the message and create the WhatsApp URL
-                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(dynamicMessage)}`;
-                
-                // ***************************************
-
-                window.open(whatsappUrl, '_blank');
-
-                setTimeout(() => {
-                    claimSection.classList.add('hidden');
-                    submissionSuccess.classList.remove('hidden');
-                    console.log('Claim Submitted:', { 
-                        Prize: prize, 
-                        Name: name, 
-                        Mobile: mobile 
-                    });
-                }, 3000);
-            });
-            
-            function launchConfetti() {
-                const duration = 5 * 1000;
-                const animationEnd = Date.now() + duration;
-                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
-
-                function randomInRange(min, max) {
-                    return Math.random() * (max - min) + min;
-                }
-
-                const interval = setInterval(function() {
-                    const timeLeft = animationEnd - Date.now();
-                    if (timeLeft <= 0) {
-                        return clearInterval(interval);
-                    }
-                    const particleCount = 50 * (timeLeft / duration);
-                    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-                    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-                }, 250);
-            }
+                claimSection.classList.remove('hidden');
+            }, { once: true });
         });
+
+        // --- WhatsApp Share & Claim Logic ---
+        whatsappShareBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            const name = nameInput.value.trim();
+            const mobile = mobileInput.value.trim();
+
+            if (name === '' || mobile === '') {
+                alert('Please fill in your name and mobile number to claim your prize.');
+                return;
+            }
+            if (!/^[0-9]{10}$/.test(mobile)) {
+                alert('Please enter a valid 10-digit mobile number.');
+                return;
+            }
+
+            // ================== YAHAN BADLAV KIYA GAYA HAI ==================
+            
+            // 1. Get the current page URL automatically
+            const pageUrl = window.location.href;
+            
+            // 2. Construct the message WITH the page URL
+            const prize = wonPrize.name;
+            const dynamicMessage = `🎉 Wow! I'm ${name}, and I just won a ${prize}!\n\nYou should try your luck too! 👇\n${pageUrl}`;
+            
+            // 3. Encode the message and create the CORRECT WhatsApp URL
+            // OLD (Problematic) URL: `whatsapp://send?text=...`
+            // NEW (Correct) URL: `https://api.whatsapp.com/send?text=...`
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(dynamicMessage)}`;
+            
+            // ================================================================
+
+            window.open(whatsappUrl, '_blank');
+
+            setTimeout(() => {
+                claimSection.classList.add('hidden');
+                submissionSuccess.classList.remove('hidden');
+                console.log('Claim Submitted:', { 
+                    Prize: prize, 
+                    Name: name, 
+                    Mobile: mobile 
+                });
+            }, 3000);
+        });
+        
+        function launchConfetti() {
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+            }, 250);
+        }
+    });
     </script>
+    
+             
 </body>
 </html>
